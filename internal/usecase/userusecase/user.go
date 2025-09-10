@@ -4,6 +4,7 @@ import (
 	"BrunoyamLesson6/internal/domain/users/errors"
 	"BrunoyamLesson6/internal/domain/users/models"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserStorage interface {
@@ -25,7 +26,12 @@ func (uu *UserUsecase) SaveUser(user models.User) error {
 	if err != nil {
 		return err
 	}
-	// TODO: Генерация хеша
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hash)
 	return uu.db.SaveUser(user)
 }
 
@@ -35,8 +41,7 @@ func (uu *UserUsecase) LoginUser(userReq models.UserRequest) (models.User, error
 		return models.User{}, err
 	}
 
-	// TODO: Проверка хеша пароля
-	if dbUser.Password != userReq.Password {
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(userReq.Password)); err != nil {
 		return models.User{}, errors.ErrorInvalidPassword
 	}
 	return dbUser, nil
