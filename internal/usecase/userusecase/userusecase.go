@@ -10,6 +10,7 @@ import (
 type UserStorage interface {
 	SaveUser(user models.User) error
 	GetUser(userReq models.UserRequest) (models.User, error)
+	GetUserByID(uid string) (models.User, error)
 }
 
 type UserUsecase struct {
@@ -45,4 +46,8 @@ func (uu *UserUsecase) LoginUser(userReq models.UserRequest) (models.User, error
 		return models.User{}, errors.ErrorInvalidPassword
 	}
 	return dbUser, nil
+}
+
+func (uu *UserUsecase) GetUserByID(uid string) (models.User, error) {
+	return uu.db.GetUserByID(uid)
 }
