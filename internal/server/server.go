@@ -118,3 +118,6 @@ func (api *RentApi) refresh(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", newRefresh, 3600*24*7, "/", "127.0.0.1:8080", false, true)
 	ctx.JSON(http.StatusOK, gin.H{"access_token": access})
 }
+
+// делаем команаду docker-compose up
+// подключаем бобра
