@@ -44,9 +44,6 @@ func (c CarUsecase) GetCarByID(id string) (carDomain.Car, error) {
 func (c CarUsecase) AddCar(car carDomain.Car) error {
 	cid := uuid.New().String()
 	car.CID = cid
-	if car.Count == 0 {
-		car.Count = 1
-	}
 	err := c.db.AddCar(car)
 	if err != nil {
 		return err

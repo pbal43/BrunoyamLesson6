@@ -52,7 +52,7 @@ func (cs *carStorage) GetAvailableCars() ([]carDomain.Car, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	rows, err := cs.db.Query(ctx, "SELECT * FROM cars WHERE available = true and count > 0")
+	rows, err := cs.db.Query(ctx, "SELECT * FROM cars WHERE available = true")
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func (cs *carStorage) AddCar(car carDomain.Car) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := cs.db.Exec(ctx, "INSERT into cars (cid, lable, model, year, available, count) VALUES ($1, $2, $3, $4, $5, $6)",
-		car.CID, car.Label, car.Model, car.Year, car.Available, car.Count)
+	_, err := cs.db.Exec(ctx, "INSERT into cars (cid, lable, model, year, available) VALUES ($1, $2, $3, $4, $5)",
+		car.CID, car.Label, car.Model, car.Year, car.Available)
 	if err != nil {
 		return err
 	}
