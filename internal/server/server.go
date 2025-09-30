@@ -2,14 +2,16 @@ package server
 
 import (
 	"BrunoyamLesson6/internal"
+	"BrunoyamLesson6/internal/domain"
 	carDomain "BrunoyamLesson6/internal/domain/cars/models"
 	userDomain "BrunoyamLesson6/internal/domain/users/models"
 	"BrunoyamLesson6/internal/server/auth"
 	"BrunoyamLesson6/internal/server/middleware"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 )
 
 type UserStorage interface {
@@ -31,47 +33,52 @@ type Storage interface {
 	CarStorage
 }
 
-type RentApi struct {
+type RentAPI struct {
 	srv       *http.Server
 	db        Storage
 	jwtSigner auth.HS256Signer
+	log       *zerolog.Logger
 }
 
-func NewServer(cfg internal.Config, db Storage) *RentApi {
+func NewServer(cfg internal.Config, db Storage, log *zerolog.Logger) *RentAPI {
 	signer := auth.HS256Signer{
 		Secret:     []byte("ultraSecretKey123"),
 		Issuer:     "rentService",
 		Audience:   "rentClient",
-		AccessTTL:  15 * time.Minute,
-		RefreshTTL: 24 * 7 * time.Hour,
-	}
-	HttpSrv := http.Server{
-		Addr: fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		AccessTTL:  domain.AccessTTL,
+		RefreshTTL: domain.RefreshTTL,
 	}
 
-	api := RentApi{srv: &HttpSrv, db: db, jwtSigner: signer}
+	httpSrv := http.Server{
+		Addr:              fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		ReadHeaderTimeout: domain.ReadHeaderTimeout,
+	}
+
+	api := RentAPI{srv: &httpSrv, db: db, jwtSigner: signer, log: log}
 
 	api.configRouter()
 
 	return &api
 }
 
-func (api *RentApi) Run() error {
+func (api *RentAPI) Run() error {
 	return api.srv.ListenAndServe()
 }
 
-func (api *RentApi) ShutDown() error {
+func (api *RentAPI) ShutDown() error {
 	return nil
 }
 
-func (api *RentApi) configRouter() {
-	router := gin.Default()
+func (api *RentAPI) configRouter() {
+	gin.SetMode(gin.ReleaseMode) // убираем логи Gin'а (добавляем свои)
+	router := gin.New()
+	router.Use(middleware.ZeroLogMiddleware(api.log))
 
 	users := router.Group("/users")
 	users.POST("/login", api.login)
 	users.POST("/register", api.register)
 	users.GET("/profile", middleware.AuthMiddleware(api.jwtSigner), api.profile)
-	users.GET("/cars")
+	// users.GET("/cars")
 
 	cars := router.Group("/cars")
 	cars.GET("/list", api.getAllCars)
@@ -87,7 +94,7 @@ func (api *RentApi) configRouter() {
 	api.srv.Handler = router
 }
 
-func (api *RentApi) refresh(ctx *gin.Context) {
+func (api *RentAPI) refresh(ctx *gin.Context) {
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -98,7 +105,7 @@ func (api *RentApi) refresh(ctx *gin.Context) {
 		ExpectedIssuer:   api.jwtSigner.Issuer,
 		ExpectedAudience: api.jwtSigner.Audience,
 		AllowMethods:     []string{"HS256"},
-		Leeway:           60 * time.Second,
+		Leeway:           domain.LeewayTimeout,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -115,7 +122,7 @@ func (api *RentApi) refresh(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.SetCookie("refresh_token", newRefresh, 3600*24*7, "/", "127.0.0.1:8080", false, true)
+	ctx.SetCookie("refresh_token", newRefresh, domain.RefreshAge, "/", "127.0.0.1:8080", false, true)
 	ctx.JSON(http.StatusOK, gin.H{"access_token": access})
 }
 

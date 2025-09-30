@@ -3,13 +3,15 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
+
+	UserID string `json:"user_id"`
 }
 
 type HS256Signer struct {
@@ -21,7 +23,7 @@ type HS256Signer struct {
 }
 
 func generateJti() string {
-	b := make([]byte, 16)
+	b := make([]byte, 16) //nolint:mnd // use once
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
 }

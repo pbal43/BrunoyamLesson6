@@ -1,10 +1,11 @@
 package db
 
 import (
+	"BrunoyamLesson6/internal/domain"
 	userDomain "BrunoyamLesson6/internal/domain/users/models"
 	"context"
+
 	"github.com/jackc/pgx/v5"
-	"time"
 )
 
 type userStorage struct {
@@ -12,11 +13,19 @@ type userStorage struct {
 }
 
 func (us *userStorage) SaveUser(user userDomain.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), domain.ContextTimeout)
 	defer cancel()
 
-	_, err := us.db.Exec(ctx, "INSERT INTO users (uid, name, email, password, age, phone) VALUES ($1, $2, $3, $4, $5, $6)",
-		user.Uuid, user.Name, user.Email, user.Password, user.Age, user.Phone)
+	_, err := us.db.Exec(
+		ctx,
+		"INSERT INTO users (uid, name, email, password, age, phone) VALUES ($1, $2, $3, $4, $5, $6)",
+		user.UUID,
+		user.Name,
+		user.Email,
+		user.Password,
+		user.Age,
+		user.Phone,
+	)
 	if err != nil {
 		// TODO: обработка ошибки при существующем uid
 		return err
@@ -25,12 +34,12 @@ func (us *userStorage) SaveUser(user userDomain.User) error {
 }
 
 func (us *userStorage) GetUser(userReq userDomain.UserRequest) (userDomain.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), domain.ContextTimeout)
 	defer cancel()
 
 	var user userDomain.User
-	err := us.db.QueryRow(ctx, "SELECT * FROM users WHERE email = $1", userReq.Email).
-		Scan(&user.Uuid, &user.Name, &user.Email, &user.Password, &user.Age, &user.Phone)
+	err := us.db.QueryRow(ctx, "SELECT uid, name, email, password, age, phone FROM users WHERE email = $1", userReq.Email).
+		Scan(&user.UUID, &user.Name, &user.Email, &user.Password, &user.Age, &user.Phone)
 	if err != nil {
 		return userDomain.User{}, err
 	}
@@ -39,12 +48,12 @@ func (us *userStorage) GetUser(userReq userDomain.UserRequest) (userDomain.User,
 }
 
 func (us *userStorage) GetUserByID(uid string) (userDomain.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), domain.ContextTimeout)
 	defer cancel()
 
 	var user userDomain.User
-	err := us.db.QueryRow(ctx, "SELECT * FROM users WHERE uid = $1", uid).
-		Scan(&user.Uuid, &user.Name, &user.Email, &user.Password, &user.Age, &user.Phone)
+	err := us.db.QueryRow(ctx, "SELECT uid, name, email, password, age, phone FROM users WHERE uid = $1", uid).
+		Scan(&user.UUID, &user.Name, &user.Email, &user.Password, &user.Age, &user.Phone)
 	if err != nil {
 		return userDomain.User{}, err
 	}

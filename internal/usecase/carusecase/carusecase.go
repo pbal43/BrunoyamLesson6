@@ -3,6 +3,7 @@ package carusecase
 import (
 	"BrunoyamLesson6/internal/domain/cars/errors"
 	carDomain "BrunoyamLesson6/internal/domain/cars/models"
+
 	"github.com/google/uuid"
 )
 
@@ -35,7 +36,7 @@ func (c CarUsecase) GetCarByID(id string) (carDomain.Car, error) {
 		return carDomain.Car{}, errors.ErrCarNotAvailable
 	}
 	car.Available = false
-	if err := c.db.UpdateAvailable(id); err != nil {
+	if err = c.db.UpdateAvailable(id); err != nil {
 		return carDomain.Car{}, err
 	}
 	return car, nil
