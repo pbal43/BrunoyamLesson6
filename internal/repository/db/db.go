@@ -4,20 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/rs/zerolog"
 )
 
 type Storage struct {
 	userStorage
 	carStorage
-}
-
-func (s *Storage) Close(ctx context.Context) error {
-	return s.userStorage.db.Close(ctx)
 }
 
 func NewStorage(connStr string) (*Storage, error) {
@@ -29,6 +25,10 @@ func NewStorage(connStr string) (*Storage, error) {
 		userStorage: userStorage{db},
 		carStorage:  carStorage{db},
 	}, nil
+}
+
+func (s *Storage) Close(ctx context.Context) error {
+	return s.userStorage.db.Close(ctx)
 }
 
 func Migrations(dsn string, migratePath string, log *zerolog.Logger) error {

@@ -4,10 +4,9 @@ import (
 	"BrunoyamLesson6/internal"
 	newdb "BrunoyamLesson6/internal/repository/db"
 	"BrunoyamLesson6/internal/server"
+	"BrunoyamLesson6/pkg/logger"
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,63 +24,57 @@ func main() {
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
-		defer signal.Stop(c)
+
 		<-c
 		cancel()
 	}()
 
-	// конфигураця приложения
 	cfg := internal.ReadConfig()
-
-	// указание уровня логирования
 	log := logger.Init(cfg.Debug)
 	log.Debug().Any("config", cfg).Send()
-	log.Info().Msg("RentAPI is starting")
 
-	// конфигураця и создание хранилища
-	// db := inmemory.NewInMemoryStorage()
+	log.Info().Msg("Server starting...")
+	// database := inmemory.NewInMemoryStorage()
 	database, err := newdb.NewStorage(cfg.DSN)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to connect to database")
+		log.Fatal().Err(err).Msg("failed to create db")
 	}
 
-	// запуск миграции
 	if err = newdb.Migrations(cfg.DSN, cfg.MigratePath, &log); err != nil {
-		log.Fatal().Err(err).Msg("Failed to create migrations")
+		log.Fatal().Err(err).Msg("failed to migrate db")
 	}
 
-	// конфигурация и запуск веб-сервера
-	srv := server.NewServer(cfg, database)
+	srv := server.NewServer(cfg, database, &log)
 
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		// конфигурация и запуск веб-сервера
 		if err = srv.Run(); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				return
 			}
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("failed to start server")
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		<-ctx.Done()
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+		log.Debug().Msg("Shutdown signal received")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
-		err = srv.ShutDown(ctx)
-		if err != nil {
-			log.Fatal(err)
+
+		if err := srv.ShutDown(ctx); err != nil {
+			log.Error().Err(err).Msg("failed to shutdown server")
 		}
-		err = database.Close(ctx)
-		if err != nil {
-			log.Fatal(err)
+		if err := database.Close(ctx); err != nil {
+			log.Error().Err(err).Msg("failed to shutdown database")
 		}
-		log.Println("To-do-list Api is shutting down")
+
+		log.Info().Msg("Server stopped")
 	}()
+
 	wg.Wait()
 }
