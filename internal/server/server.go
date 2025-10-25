@@ -7,11 +7,12 @@ import (
 	userDomain "BrunoyamLesson6/internal/domain/users/models"
 	"BrunoyamLesson6/internal/server/auth"
 	"BrunoyamLesson6/internal/server/middleware"
+	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
 )
 
 type UserStorage interface {
@@ -65,8 +66,8 @@ func (api *RentAPI) Run() error {
 	return api.srv.ListenAndServe()
 }
 
-func (api *RentAPI) ShutDown() error {
-	return nil
+func (api *RentApi) ShutDown(ctx context.Context) error {
+	return api.srv.Shutdown(ctx)
 }
 
 func (api *RentAPI) configRouter() {

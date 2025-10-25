@@ -4,6 +4,7 @@ import (
 	"BrunoyamLesson6/internal/domain"
 	carDomain "BrunoyamLesson6/internal/domain/cars/models"
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -91,6 +92,31 @@ func (cs *carStorage) AddCar(car carDomain.Car) error {
 	return nil
 }
 
+func (cs *carStorage) AddCars(cars []carDomain.Car) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	tx, err := cs.db.Begin(ctx) // открыли транзакцию
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) // если упало - откатываем изменения, но если ниже будет коммит - то зафиксируем изменения и не откатит
+
+	_, err = tx.Prepare(ctx, "add_car", "INSERT into cars (cid, lable, model, year, available) VALUES ($1, $2, $3, $4, $5)") // подготовленный запрос
+	if err != nil {
+		return err
+	}
+
+	for _, car := range cars { // засунули проход по всем в 1 транзакцию
+		_, err = tx.Exec(ctx, "add_car", car.CID, car.Label, car.Model, car.Year, car.Available)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx) // коммитим
+}
+
+// TODO: добавить в аргументы новый статус available
 func (cs *carStorage) UpdateAvailable(cid string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), domain.ContextTimeout)
 	defer cancel()
