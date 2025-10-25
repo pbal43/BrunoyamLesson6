@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type ParseOptions struct {
@@ -33,7 +35,7 @@ func (hs HS256Signer) ParseAccessToken(token string, opt ParseOptions) (*Claims,
 		return nil, err
 	}
 	if !tok.Valid {
-		return nil, fmt.Errorf("invalid access token")
+		return nil, errors.New("invalid access token")
 	}
 	return &claims, nil
 }
@@ -43,7 +45,7 @@ func (hs HS256Signer) ParseRefreshToken(token string, opt ParseOptions) (*jwt.Re
 	tok, err := jwt.ParseWithClaims(
 		token,
 		&claims,
-		func(token *jwt.Token) (interface{}, error) {
+		func(_ *jwt.Token) (interface{}, error) {
 			return hs.Secret, nil
 		},
 		jwt.WithIssuer(opt.ExpectedIssuer),
@@ -55,7 +57,7 @@ func (hs HS256Signer) ParseRefreshToken(token string, opt ParseOptions) (*jwt.Re
 		return nil, err
 	}
 	if !tok.Valid {
-		return nil, fmt.Errorf("invalid refresh token")
+		return nil, errors.New("invalid refresh token")
 	}
 	return &claims, nil
 }

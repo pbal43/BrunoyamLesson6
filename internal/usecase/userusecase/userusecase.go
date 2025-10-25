@@ -3,6 +3,7 @@ package userusecase
 import (
 	"BrunoyamLesson6/internal/domain/users/errors"
 	"BrunoyamLesson6/internal/domain/users/models"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -30,7 +31,7 @@ func (uu *UserUsecase) SaveUser(user models.User) error {
 	}
 
 	uid := uuid.New().String()
-	user.Uuid = uid
+	user.UUID = uid
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -46,8 +47,8 @@ func (uu *UserUsecase) LoginUser(userReq models.UserRequest) (models.User, error
 		return models.User{}, err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(userReq.Password)); err != nil {
-		return models.User{}, errors.ErrorInvalidPassword
+	if err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(userReq.Password)); err != nil {
+		return models.User{}, errors.ErrInvalidPassword
 	}
 	return dbUser, nil
 }

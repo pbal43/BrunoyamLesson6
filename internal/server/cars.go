@@ -5,15 +5,18 @@ import (
 	carDomain "BrunoyamLesson6/internal/domain/cars/models"
 	"BrunoyamLesson6/internal/usecase/carusecase"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func (srv *RentApi) getRent(ctx *gin.Context) {
+func (srv *RentAPI) getRent(ctx *gin.Context) {
 	carID := ctx.Param("id")
+	srv.log.Debug().Str("carID", carID).Msg("Car id from URL")
 	usecase := carusecase.NewCarUsecase(srv.db)
 	car, err := usecase.GetCarByID(carID)
 	if err != nil {
+		srv.log.Error().Err(err).Msg("Failed to get car by id")
 		if errors.Is(err, carErrors.ErrCarsNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -24,8 +27,8 @@ func (srv *RentApi) getRent(ctx *gin.Context) {
 		}
 	}
 
-	//userID, exist := ctx.Param("userID")
-	//if !exist {
+	// userID, exist := ctx.Param("userID")
+	// if !exist {
 	//	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found in request context"})
 	//	return
 	//}
@@ -33,10 +36,11 @@ func (srv *RentApi) getRent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"msg": "rent successful", "car": car})
 }
 
-func (srv *RentApi) getAllCars(ctx *gin.Context) {
+func (srv *RentAPI) getAllCars(ctx *gin.Context) {
 	usecase := carusecase.NewCarUsecase(srv.db)
 	cars, err := usecase.GetAllCars()
 	if err != nil {
+		srv.log.Error().Err(err).Msg("Failed to get all cars")
 		if errors.Is(err, carErrors.ErrCarsNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": carErrors.ErrCarsNotFound})
 		}
@@ -46,10 +50,11 @@ func (srv *RentApi) getAllCars(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"cars": cars})
 }
 
-func (srv *RentApi) getAvailableCars(ctx *gin.Context) {
+func (srv *RentAPI) getAvailableCars(ctx *gin.Context) {
 	usecase := carusecase.NewCarUsecase(srv.db)
 	cars, err := usecase.GetAvailableCars()
 	if err != nil {
+		srv.log.Error().Err(err).Msg("Failed to get available cars")
 		if errors.Is(err, carErrors.ErrCarsNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": carErrors.ErrCarsNotFound})
 		}
@@ -60,15 +65,17 @@ func (srv *RentApi) getAvailableCars(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"msg": "available cars", "cars": cars})
 }
 
-func (srv *RentApi) addCar(ctx *gin.Context) {
+func (srv *RentAPI) addCar(ctx *gin.Context) {
 	var car carDomain.Car
 	if err := ctx.ShouldBindJSON(&car); err != nil {
+		srv.log.Error().Err(err).Msg("Failed to bind car")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	usecase := carusecase.NewCarUsecase(srv.db)
 	if err := usecase.AddCar(car); err != nil {
+		srv.log.Error().Err(err).Msg("Failed to save car")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 	ctx.JSON(http.StatusCreated, gin.H{"msg": "car added", "car": car})
