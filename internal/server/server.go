@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 )
 
 type UserStorage interface {
@@ -66,7 +66,7 @@ func (api *RentAPI) Run() error {
 	return api.srv.ListenAndServe()
 }
 
-func (api *RentApi) ShutDown(ctx context.Context) error {
+func (api *RentAPI) ShutDown(ctx context.Context) error {
 	return api.srv.Shutdown(ctx)
 }
 
