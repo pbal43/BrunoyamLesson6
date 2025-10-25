@@ -4,15 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"log"
 )
 
 type Storage struct {
 	userStorage
 	carStorage
+}
+
+func (s *Storage) Close(ctx context.Context) error {
+	return s.userStorage.db.Close(ctx)
 }
 
 func NewStorage(connStr string) (*Storage, error) {
