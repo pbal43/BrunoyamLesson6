@@ -4,12 +4,14 @@ import (
 	"BrunoyamLesson6/internal/domain/users/errors"
 	"BrunoyamLesson6/internal/domain/users/models"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserStorage interface {
 	SaveUser(user models.User) error
 	GetUser(userReq models.UserRequest) (models.User, error)
+	GetUserByID(uid string) (models.User, error)
 }
 
 type UserUsecase struct {
@@ -26,6 +28,9 @@ func (uu *UserUsecase) SaveUser(user models.User) error {
 	if err != nil {
 		return err
 	}
+
+	uid := uuid.New().String()
+	user.Uuid = uid
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -45,4 +50,8 @@ func (uu *UserUsecase) LoginUser(userReq models.UserRequest) (models.User, error
 		return models.User{}, errors.ErrorInvalidPassword
 	}
 	return dbUser, nil
+}
+
+func (uu *UserUsecase) GetUserByID(uid string) (models.User, error) {
+	return uu.db.GetUserByID(uid)
 }

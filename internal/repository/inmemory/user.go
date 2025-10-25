@@ -30,3 +30,11 @@ func (s *Storage) GetUser(userReq userDomain.UserRequest) (userDomain.User, erro
 	}
 	return userDomain.User{}, userErrors.ErrorUserNotExist
 }
+
+func (s *Storage) GetUserByID(uid string) (userDomain.User, error) {
+	user, ok := s.users[uid]
+	if !ok {
+		return userDomain.User{}, userErrors.ErrorUserNotExist
+	}
+	return user, nil
+}
